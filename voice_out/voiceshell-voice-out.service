@@ -1,0 +1,24 @@
+[Unit]
+Description=VoiceShell experimental Voice Out Bridge (loopback only)
+After=network.target
+
+[Service]
+Type=simple
+DynamicUser=yes
+StateDirectory=voiceshell-voice-out
+StateDirectoryMode=0700
+ExecStart=/usr/bin/python3 /opt/voiceshell-voice-out/bridge.py --state /var/lib/voiceshell-voice-out
+Restart=on-failure
+RestartSec=3
+UMask=0077
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+RestrictAddressFamilies=AF_INET AF_UNIX
+MemoryMax=128M
+TasksMax=32
+
+[Install]
+WantedBy=multi-user.target

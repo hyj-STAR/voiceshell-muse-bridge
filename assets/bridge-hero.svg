@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="480" viewBox="0 0 1280 480" role="img" aria-labelledby="title desc">
+ <title id="title">VoiceShell Muse Bridge</title>
+ <desc id="desc">Use ESP32 for initial pairing. A verified Linux text bridge then communicates with Muse without ESP32 forwarding. Additional device adapters are planned.</desc>
+ <defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#101827"/><stop offset="1" stop-color="#182f3c"/></linearGradient></defs>
+ <rect width="1280" height="480" rx="24" fill="url(#bg)"/>
+ <g font-family="Arial,Helvetica,sans-serif">
+ <text x="56" y="65" fill="#73ead1" font-size="15" letter-spacing="4">VOICESHELL / BUILDER PREVIEW</text>
+ <text x="56" y="130" fill="#fff" font-size="48" font-weight="700">A bridge beyond the board.</text>
+ <text x="56" y="171" fill="#becdd8" font-size="22">Pair on ESP32. Run the text connection on Linux.</text>
+ <rect x="56" y="221" width="282" height="116" rx="16" fill="#203243" stroke="#506070"/>
+ <text x="80" y="253" fill="#93a9bb" font-size="13" letter-spacing="2">INITIAL SETUP</text>
+ <text x="80" y="289" fill="#fff" font-size="25" font-weight="700">ESP32 + Muse App</text>
+ <text x="80" y="316" fill="#becdd8" font-size="16">User-authorized pairing</text>
+ <path d="M350 277 H421 M410 270 L421 277 L410 284" fill="none" stroke="#8399ab" stroke-width="2" stroke-dasharray="5 4"/>
+ <rect x="435" y="221" width="355" height="116" rx="16" fill="#153e3d" stroke="#73ead1"/>
+ <text x="459" y="253" fill="#73ead1" font-size="13" letter-spacing="2">VERIFIED TEXT ROUND TRIP</text>
+ <text x="459" y="289" fill="#fff" font-size="25" font-weight="700">Linux / VoiceShell Bridge</text>
+ <text x="459" y="316" fill="#c9e6e0" font-size="16">No ESP32 forwarding required</text>
+ <path d="M809 270 H880 M869 263 L880 270 L869 277 M880 287 H809 M820 280 L809 287 L820 294" fill="none" stroke="#73ead1" stroke-width="2"/>
+ <rect x="899" y="221" width="325" height="116" rx="16" fill="#203243" stroke="#506070"/>
+ <text x="923" y="253" fill="#93a9bb" font-size="13" letter-spacing="2">OFFICIAL GADGET SDK</text>
+ <text x="923" y="289" fill="#fff" font-size="25" font-weight="700">Your Muse</text>
+ <text x="923" y="316" fill="#becdd8" font-size="16">Messages + reply tool</text>
+ <line x1="56" y1="374" x2="1224" y2="374" stroke="#3c5261"/>
+ <text x="56" y="411" fill="#fff" font-size="18">3 ESP32 rounds · 2 independent Linux sessions</text>
+ <text x="56" y="443" fill="#99adbc" font-size="15">Observed 2026-10-03 · Experimental, text only · Device adapters and headset audio are next</text>
+ </g>
+</svg>

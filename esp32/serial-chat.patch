@@ -1,0 +1,344 @@
+diff --git a/esp32/main/CMakeLists.txt b/esp32/main/CMakeLists.txt
+index fc3457f..6aed500 100644
+--- a/esp32/main/CMakeLists.txt
++++ b/esp32/main/CMakeLists.txt
+@@ -58,6 +58,7 @@ set(GADGET_REQUIRES
+     esp_driver_ledc
+     esp_driver_spi
+     esp_driver_uart
++    esp_driver_usb_serial_jtag
+     esp_lcd
+     lwip
+     mbedtls
+@@ -80,6 +81,10 @@ if(CONFIG_MUSE_ENABLED)
+     list(APPEND GADGET_SRCS "muse_glue.c")
+ endif()
+ 
++if(CONFIG_HOMEHUB_SERIAL_CHAT)
++    list(APPEND GADGET_SRCS "serial_chat.c")
++endif()
++
+ if(CONFIG_HOMEHUB_LED_BACKEND_DEVKIT_GPIO27 OR CONFIG_HOMEHUB_LED_BACKEND_VOICE_RING)
+     list(APPEND GADGET_REQUIRES led_strip)
+ endif()
+diff --git a/esp32/main/Kconfig.projbuild b/esp32/main/Kconfig.projbuild
+index 1366c24..5c15615 100644
+--- a/esp32/main/Kconfig.projbuild
++++ b/esp32/main/Kconfig.projbuild
+@@ -14,6 +14,14 @@
+ 
+ menu "ESP32 Device SDK"
+ 
++    config HOMEHUB_SERIAL_CHAT
++        bool "USB text bridge for headless VoiceShell testing"
++        depends on IDF_TARGET_ESP32S3 && SPIRAM && !MUSE_ENABLED
++        default n
++        help
++            Send text through the existing paired Muse connection over USB.
++            Does not enable microphones, display pins, OTA or LAN access.
++
+     config GADGET_PRODUCT_NAME
+         string "Human-visible product name for log messages"
+         default "Muse Gadget"
+diff --git a/esp32/main/main.c b/esp32/main/main.c
+index 89bff0b..9ae4eb3 100644
+--- a/esp32/main/main.c
++++ b/esp32/main/main.c
+@@ -17,6 +17,9 @@
+ #include "app.h"
+ #include "esp_log.h"
+ #include "diagnostic_log.h"
++#if CONFIG_HOMEHUB_SERIAL_CHAT
++#include "serial_chat.h"
++#endif
+ #if CONFIG_MUSE_ENABLED
+ #include "muse_glue.h"
+ #endif
+@@ -29,6 +32,9 @@ void app_main(void) {
+     }
+ #endif
+     ESP_LOGI("link.main", CONFIG_GADGET_PRODUCT_NAME " starting");
++#if CONFIG_HOMEHUB_SERIAL_CHAT
++    serial_chat_start();
++#endif
+ #if CONFIG_MUSE_ENABLED
+     muse_glue_start();
+ #endif
+diff --git a/esp32/main/noise_control.cpp b/esp32/main/noise_control.cpp
+index 675beb4..c09d090 100644
+--- a/esp32/main/noise_control.cpp
++++ b/esp32/main/noise_control.cpp
+@@ -15,6 +15,9 @@
+  */
+ 
+ #include "noise_control.h"
++#if CONFIG_HOMEHUB_SERIAL_CHAT
++#include "serial_chat.h"
++#endif
+ #include "stack_monitor.h"
+ #include "noise_upgrade.h"
+ #include "noise_tunnel_internal.h"
+@@ -888,8 +891,8 @@ static bool tunnel_send_body(void *vctx, const uint8_t *data, size_t len) {
+ 
+ // ---- Extra daemon requests (noise_ctrl_req_*) --------------------------------
+ 
+-// Only Muse opens these; Link-only gateways get the empty stubs below.
+-#if CONFIG_MUSE_ENABLED
++// UI builds and the explicit USB text bridge share the paired session.
++#if CONFIG_MUSE_ENABLED || CONFIG_HOMEHUB_SERIAL_CHAT
+ 
+ // Stream ids from here up belong to these requests; lower ids are Link's own.
+ #define REQ_STREAM_BASE 16
+@@ -1018,8 +1021,13 @@ static bool req_pump_tx(esp_tls_t *tls, ClientSession &session,
+     // The loop turns every tick; the heap checks below walk the heap, so only
+     // when there is something to send.
+     if (!uxQueueMessagesWaiting(s_req_q)) return true;
++#if CONFIG_HOMEHUB_SERIAL_CHAT
++    const bool tx_headroom = noise_tx_has_dma_headroom(nullptr);
++#else
+     int32_t queued = s_req_queued_bytes;
+-    if (!noise_tx_has_dma_headroom_reclaiming(queued > 0 ? (size_t)queued : 0)
++    const bool tx_headroom = noise_tx_has_dma_headroom_reclaiming(queued > 0 ? (size_t)queued : 0);
++#endif
++    if (!tx_headroom
+         || !noise_tx_has_contiguous_dma_headroom()) return true;
+     if (SMALL_CONTROL_SESSION
+         && heap_caps_get_largest_free_block(MALLOC_CAP_8BIT) < REQ_TLS_BLOCK) return true;
+@@ -1237,6 +1245,14 @@ static char *build_register_json(void) {
+     add_register_metadata_string(&metadata, params, "network_ssid", wifi_ssid);
+ 
+     cJSON *commands = cJSON_CreateObject();
++#if CONFIG_HOMEHUB_SERIAL_CHAT
++    cJSON *reply_required = cJSON_CreateObject();
++    cJSON_AddItemToObject(reply_required, "correlation", string_param("Exact correlation ID supplied in the user's VoiceShell request"));
++    cJSON_AddItemToObject(reply_required, "text", string_param("Reply text, at most 1024 UTF-8 bytes. Text only; never credentials."));
++    add_command(commands, "voiceshell.reply",
++                "Return the answer to a pending VoiceShell USB text request. Use the correlation ID from that request. Does not execute actions or change settings.",
++                reply_required, nullptr);
++#endif
+     add_command(commands, "device.health",
+                 "Report basic Link health, including battery level (percent), "
+                 "voltage, and whether it is charging or on USB power; each is "
+@@ -1586,6 +1602,16 @@ static void handle_invoke_request(
+         }
+     } else if (strcmp(command, "device.health") == 0) {
+         send_device_health(session_generation, request_id);
++#if CONFIG_HOMEHUB_SERIAL_CHAT
++    } else if (strcmp(command, "voiceshell.reply") == 0) {
++        const char *correlation = cJSON_GetStringValue(cJSON_GetObjectItem(cmd_params, "correlation"));
++        const char *text = cJSON_GetStringValue(cJSON_GetObjectItem(cmd_params, "text"));
++        bool accepted = serial_chat_receive(correlation, text);
++        cJSON *result = cJSON_CreateObject();
++        cJSON_AddBoolToObject(result, "ok", accepted);
++        cJSON_AddStringToObject(result, "payload_json", accepted ? "{\"received\":true}" : "{\"received\":false,\"reason\":\"invalid_or_no_pending_request\"}");
++        queue_result(session_generation, request_id, result);
++#endif
+     } else if (s_command_cb) {
+         cJSON *result = s_command_cb(command, cmd_params, request_id,
+                                      session_generation);
+@@ -2124,7 +2150,7 @@ static session_result_t run_session(stack_monitor_t *stack) {
+             }
+         }
+ 
+-#if CONFIG_MUSE_ENABLED
++#if CONFIG_MUSE_ENABLED || CONFIG_HOMEHUB_SERIAL_CHAT
+         {
+             bool sent = false;
+             if (!req_pump_tx(tls, session, svc_scratch, env_scratch, ws_buf, &sent)) {
+@@ -2369,7 +2395,7 @@ extern "C" void noise_ctrl_send_command_result(
+     queue_result(session_generation, request_id, result);
+ }
+ 
+-#if CONFIG_MUSE_ENABLED
++#if CONFIG_MUSE_ENABLED || CONFIG_HOMEHUB_SERIAL_CHAT
+ extern "C" int64_t noise_ctrl_req_open(const char *verb, const char *path,
+                                        const char *const *headers, bool end_body,
+                                        noise_ctrl_req_cb cb, void *ctx) {
+diff --git a/esp32/main/serial_chat.c b/esp32/main/serial_chat.c
+new file mode 100644
+index 0000000..93c284e
+--- /dev/null
++++ b/esp32/main/serial_chat.c
+@@ -0,0 +1,166 @@
++/* VoiceShell headless USB text bridge. No credential export or setup writes. */
++#include "serial_chat.h"
++#include "noise_control.h"
++#include "identity.h"
++#include "cJSON.h"
++#include "driver/usb_serial_jtag.h"
++#include "esp_heap_caps.h"
++#include "esp_log.h"
++#include "esp_random.h"
++#include "freertos/FreeRTOS.h"
++#include "freertos/semphr.h"
++#include "freertos/task.h"
++#include "mbedtls/base64.h"
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <inttypes.h>
++
++#define BODY_CAP 16384
++#define LINE_CAP 2048
++static SemaphoreHandle_t s_lock;
++static char *s_body;
++static size_t s_len;
++static uint32_t s_gen;
++static int s_status;
++static bool s_done, s_overflow;
++static char s_expected[65], s_reply[1025];
++
++bool serial_chat_receive(const char *correlation, const char *text)
++{
++    if (!s_lock || !correlation || !text || !text[0] || strlen(text) > 1024) return false;
++    xSemaphoreTake(s_lock, portMAX_DELAY);
++    bool ok = s_expected[0] && !strcmp(s_expected, correlation);
++    if (ok && s_reply[0]) ok = !strcmp(s_reply, text);
++    if (ok) strlcpy(s_reply, text, sizeof(s_reply));
++    xSemaphoreGive(s_lock);
++    return ok;
++}
++
++static void received(void *ctx, int status, const uint8_t *data, size_t len, bool end)
++{
++    xSemaphoreTake(s_lock, portMAX_DELAY);
++    if ((uint32_t)(uintptr_t)ctx == s_gen) {
++        if (status) s_status = status;
++        if (len > BODY_CAP - s_len) s_overflow = true;
++        else if (!s_overflow && len) { memcpy(s_body + s_len, data, len); s_len += len; }
++        if (end || status < 0) s_done = true;
++    }
++    xSemaphoreGive(s_lock);
++}
++
++static void request(const char *verb, const char *path, const char *body)
++{
++    if (!noise_ctrl_is_connected()) { puts("@vs_error offline"); return; }
++    xSemaphoreTake(s_lock, portMAX_DELAY);
++    if (++s_gen == 0) ++s_gen;
++    uint32_t gen = s_gen;
++    s_len = 0; s_status = 0; s_done = false; s_overflow = false;
++    xSemaphoreGive(s_lock);
++    char id[40];
++    snprintf(id, sizeof(id), "%08" PRIx32 "-%04x-4%03x-8%03x-%08" PRIx32 "%04x",
++             esp_random(), (unsigned)(esp_random() & 65535), (unsigned)(esp_random() & 4095),
++             (unsigned)(esp_random() & 4095), esp_random(), (unsigned)(esp_random() & 65535));
++    const char *headers[] = {"Content-Type", "application/json", "x-app-id", "musegadget", "x-request-id", id, NULL};
++    int64_t stream = noise_ctrl_req_open(verb, path, headers, body == NULL, received, (void *)(uintptr_t)gen);
++    if (!stream) { puts("@vs_error request_not_started"); return; }
++    bool queued = !body || noise_ctrl_req_send(stream, body, strlen(body), true, 1000);
++    bool done = false;
++    TickType_t start = xTaskGetTickCount();
++    while (queued && (xTaskGetTickCount() - start) < pdMS_TO_TICKS(90000)) {
++        xSemaphoreTake(s_lock, portMAX_DELAY);
++        done = s_done;
++        xSemaphoreGive(s_lock);
++        if (done) break;
++        vTaskDelay(pdMS_TO_TICKS(20));
++    }
++    xSemaphoreTake(s_lock, portMAX_DELAY);
++    ++s_gen; /* late callbacks cannot modify the body during serialization */
++    xSemaphoreGive(s_lock);
++    if (!queued || !done) {
++        noise_ctrl_req_cancel(stream);
++        puts("@vs_error request_timeout_or_send_failed_delivery_unknown");
++        return; /* do not retry a POST automatically */
++    }
++    if (s_overflow) { puts("@vs_error response_too_large"); return; }
++    size_t cap = 4 * ((s_len + 2) / 3) + 1, out_len = 0;
++    unsigned char *encoded = heap_caps_malloc(cap, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
++    if (!encoded) { puts("@vs_error no_memory"); return; }
++    if (mbedtls_base64_encode(encoded, cap, &out_len, (const unsigned char *)s_body, s_len) == 0) {
++        encoded[out_len] = 0;
++        printf("@vs_reply {\"status\":%d,\"body_b64\":\"%s\"}\n", s_status, encoded);
++    }
++    free(encoded);
++}
++
++static void command(char *line)
++{
++    if (!strcmp(line, ">status")) {
++        printf("@vs_status {\"chat\":true,\"connected\":%s}\n", noise_ctrl_is_connected() ? "true" : "false");
++    } else if (!strncmp(line, ">expect=", 8) && line[8] && strlen(line + 8) <= 64
++               && strspn(line + 8, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-") == strlen(line + 8)) {
++        xSemaphoreTake(s_lock, portMAX_DELAY);
++        strlcpy(s_expected, line + 8, sizeof(s_expected)); s_reply[0] = 0;
++        xSemaphoreGive(s_lock);
++        puts("@vs_status {\"waiting\":true}");
++    } else if (!strcmp(line, ">reply")) {
++        cJSON *reply = cJSON_CreateObject();
++        if (!reply) { puts("@vs_error no_memory"); return; }
++        xSemaphoreTake(s_lock, portMAX_DELAY);
++        cJSON_AddStringToObject(reply, "correlation", s_expected);
++        cJSON_AddStringToObject(reply, "text", s_reply);
++        xSemaphoreGive(s_lock);
++        char *json = cJSON_PrintUnformatted(reply);
++        cJSON_Delete(reply);
++        if (json) { printf("@vs_status %s\n", json); cJSON_free(json); }
++    } else if (!strncmp(line, ">chat=", 6) && line[6]) {
++        cJSON *root = cJSON_CreateObject();
++        if (!root) { puts("@vs_error no_memory"); return; }
++        cJSON_AddStringToObject(root, "message", line + 6);
++        cJSON_AddStringToObject(root, "output_modality", "text");
++        cJSON_AddStringToObject(root, "device_id", identity_node_id());
++        char *body = cJSON_PrintUnformatted(root);
++        cJSON_Delete(root);
++        if (body) { request("POST", "/chat/stream", body); cJSON_free(body); }
++        else puts("@vs_error no_memory");
++    } else if (!strcmp(line, ">history=latest")) {
++        request("GET", "/chat/history?limit=1", NULL);
++    } else if (!strncmp(line, ">history=", 9) && line[9] && strspn(line + 9, "0123456789") == strlen(line + 9) && strlen(line + 9) <= 20) {
++        char path[96];
++        snprintf(path, sizeof(path), "/chat/history?limit=1&after_seq=%s", line + 9);
++        request("GET", path, NULL);
++    } else puts("@vs_error unsupported_command");
++    fflush(stdout);
++}
++
++static void console_task(void *unused)
++{
++    char *line = heap_caps_malloc(LINE_CAP, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
++    if (!line) { vTaskDelete(NULL); return; }
++    size_t n = 0; bool overflow = false;
++    for (;;) {
++        uint8_t c;
++        if (usb_serial_jtag_read_bytes(&c, 1, pdMS_TO_TICKS(1000)) != 1) continue;
++        if (c == '\r') continue;
++        if (c == '\n') {
++            if (overflow) { puts("@vs_error line_too_long"); fflush(stdout); }
++            else if (n) { line[n] = 0; command(line); }
++            n = 0; overflow = false;
++        } else if (!c || n >= LINE_CAP - 1) overflow = true;
++        else if (!overflow) line[n++] = (char)c;
++    }
++}
++
++void serial_chat_start(void)
++{
++    s_lock = xSemaphoreCreateMutex();
++    s_body = heap_caps_malloc(BODY_CAP, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
++    if (!s_lock || !s_body) { ESP_LOGE("link.serial_chat", "memory unavailable"); return; }
++    usb_serial_jtag_driver_config_t cfg = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();
++    cfg.rx_buffer_size = 4096;
++    if (usb_serial_jtag_driver_install(&cfg) != ESP_OK) { ESP_LOGE("link.serial_chat", "USB console unavailable"); return; }
++    if (xTaskCreate(console_task, "vs_chat", 6144, NULL, 4, NULL) != pdPASS) {
++        ESP_LOGE("link.serial_chat", "task allocation failed"); return;
++    }
++    ESP_LOGI("link.serial_chat", "headless USB text bridge ready");
++}
+diff --git a/esp32/main/serial_chat.h b/esp32/main/serial_chat.h
+new file mode 100644
+index 0000000..98de41f
+--- /dev/null
++++ b/esp32/main/serial_chat.h
+@@ -0,0 +1,10 @@
++#pragma once
++#include <stdbool.h>
++#ifdef __cplusplus
++extern "C" {
++#endif
++void serial_chat_start(void);
++bool serial_chat_receive(const char *correlation, const char *text);
++#ifdef __cplusplus
++}
++#endif

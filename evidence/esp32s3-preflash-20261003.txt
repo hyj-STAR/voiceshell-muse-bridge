@@ -1,0 +1,67 @@
+ESP32-S3 test-board preflash evidence, 2026-10-03
+
+Read-only hardware probe:
+  ESP32-S3 QFN56, revision v0.2
+  Flash: 16 MB, manufacturer 0x85, device 0x2018
+  Embedded PSRAM: 8 MB AP_3v3
+  Crystal: 40 MHz
+  Secure Boot: disabled
+  Flash encryption: disabled
+  SPI_BOOT_CRYPT_CNT: 0
+  Exact board vendor/model: unknown
+
+Original Flash preservation:
+  Read size: 16,777,216 bytes
+  SHA256: CD0F30AC9491DA499EAF2167F07B5ACCF23CF6779C506110431AA766F346273E
+  Independent esptool verify_flash comparison: successful, exit code 0
+  Storage: private Windows experiment directory, not in GitHub
+  No Flash writes or eFuse writes performed at this checkpoint
+
+Source preparation:
+  Muse SDK: d62b72f8f76b4c18cf9aa64dd3b8781a4f31f7c4
+  ESP-IDF v6.0.1: 8c19b156084a0753687347cca1f5355782893533
+  Isolated IDF 6.0.1 tools and Python environment installed successfully
+
+Build and write checkpoint:
+  Build completed: 1,244 / 1,244 steps
+  Signed test application: 1,314,816 bytes; 2,097,152-byte slot; 37.3% free
+  Generated board/Flash/PSRAM/USB console configuration verified
+  Secure Boot, Flash encryption and pairing eFuse authentication disabled
+  OTA, support uploads and tunnel access disabled
+  Original backup hash unchanged before writing
+  esptool write_flash completed with per-image hash verification
+  No eFuse writes; no whole-Flash erase
+  First 45-second capture: USB_UART_CHIP_RESET, DOWNLOAD(USB/UART0)
+  User then confirmed physical RESET/EN without BOOT held
+  Non-resetting capture showed application heartbeats at uptime 75-100 seconds
+  setup=advertising; ble=advertising; PSRAM available=8,160 KiB
+  No panic observed in that captured interval; initial full boot was not captured
+  BLE advertisement is firmware-reported, not independent radio evidence
+  User confirmed Muse App can see the MuseGadget device
+  Phone discovery passed by user observation; account binding not yet confirmed
+  Physical BOOT confirmation passed: setup=confirmed
+  Wi-Fi joining passed: wifi=up, then setup advanced wifi->auth->vm
+  VM lookup failed: repeated select() timeout, ESP_ERR_HTTP_CONNECT, status=0
+  No HTTP 401/403 observed; no application panic observed in captured interval
+  Official SDK returned to advertising after partial-setup rollback
+
+Read-only network comparison:
+  Default Muse API root endpoint, not an authenticated SDK request
+  Windows normal/IPv4 probes: timeout, HTTP code 000
+  Windows two temporary public-DNS address overrides: timeout, HTTP code 000
+  Mac normal probe: HTTP 404; explicit curl no-proxy probe: HTTP 404
+  Linux server probe: HTTP 404
+  No global network/proxy/DNS changes; no TLS verification disabled
+  Default-host comparison does not prove the board's actual provisioned origin
+  Account binding incomplete; network path remains the next investigation
+
+Host tests (not hardware acceptance):
+  Latest pinned SDK test run: 144 tests, OK, 3 skipped
+  Host environment: macOS, temporary CMake 4.0.3 and transferred cJSON sources
+  Boot-summary helper tests: 3 passed
+
+Not yet verified:
+  Full startup capture, completed pairing/provisioning/cloud connection,
+  Linux credential portability, audio operation
+
+No device MAC, SDK token, firmware binary, account data, or raw serial log is included.

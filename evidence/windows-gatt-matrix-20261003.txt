@@ -1,0 +1,18 @@
+Real Windows interactive desktop probe built from 2c906ccf4045a443e19d02d10778f19799782e74.
+PACKAGE_IDENTITY:VoiceShell.MuseRelayExperimental
+os=10.0.22621.0 adapterPresent=true peripheralRole=true lowEnergy=true radio=On
+PROBE_SERVICE_CREATE:Success
+PROBE_CHARACTERISTIC_CREATE:Success
+GATT_ADVERTISEMENT:Aborted:Success
+GATT_ONLY_STATUS:Aborted
+GATT_VARIANT:connectable=False:discoverable=True:status=Aborted
+GATT_VARIANT:connectable=True:discoverable=False:status=Aborted
+MANUFACTURER_ADVERTISEMENT:Waiting:Success
+MANUFACTURER_ADVERTISEMENT:Started:Success
+COMBINED_STATUS:Aborted:Started
+PROBE_CLOSED_NO_ACCOUNT_PAIRING
+PAIRING_WINDOW_CLOSED
+Task result=0; temporary interactive task removed.
+No Muse account binding or phone discovery was verified.
+Bluetooth services were running; Intel Bluetooth driver=22.170.0.2 (2022).
+Old driver age is not evidence of the unique cause.

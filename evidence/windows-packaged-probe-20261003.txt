@@ -1,0 +1,15 @@
+Real Windows desktop-session probe; account setup was NOT attempted.
+Installed package built from source commit d5787e35018c9a33b4d6cc413c5c9c6ca69b3e8a.
+PACKAGE_IDENTITY:VoiceShell.MuseRelayExperimental
+os=10.0.22621.0 adapterPresent=true peripheralRole=true lowEnergy=true radio=On
+PROBE_SERVICE_CREATE:Success
+PROBE_CHARACTERISTIC_CREATE:Success
+GATT_ADVERTISEMENT:Aborted:Success
+GATT_ONLY_STATUS:Aborted
+MANUFACTURER_ADVERTISEMENT:Waiting:Success
+MANUFACTURER_ADVERTISEMENT:Started:Success
+COMBINED_STATUS:Aborted:Started
+PROBE_CLOSED_NO_ACCOUNT_PAIRING
+PAIRING_WINDOW_CLOSED
+Scheduled task exited with result 0 and was removed on reconnection.
+Result 0 is normal diagnostic completion, NOT successful advertising or pairing.
