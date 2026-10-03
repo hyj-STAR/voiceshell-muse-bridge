@@ -83,9 +83,18 @@
 
 <img src="assets/linux-test-report.jpg" alt="Linux 独立收发实测报告截图" width="100%"/>
 
-手机对话与连续录屏尚未补齐。没有使用合成对话图代替实测画面。
+连续录屏尚未补齐。没有使用合成对话图代替实测画面。
 
 </details>
+
+### 手机上实际看到了什么
+
+下面是测试者提供的原始截图，没有改写对话：设备列表出现了 **VoiceShell Linux Bridge Test**；对话里能看到两轮指定测试消息，以及 Muse 对第二轮的确认。
+
+<img src="assets/muse-device-list.jpg" alt="Muse 设备列表出现 VoiceShell Linux Bridge Test" width="280"/>
+<img src="assets/muse-chat-test.jpg" alt="两轮测试消息与 Muse 的第二轮确认" width="360"/>
+
+单看聊天截图，不能证明 Linux 已收到工具回传，也不能证明 ESP32 当时停机，需要结合[服务器实验记录](voice_out/LINUX_MIGRATION_20261003.md)看。图中的 correlation 是每轮测试编号，不是登录令牌。设备页还保留了官方开发者模式提示：社区设备未经 Meta 验证，并会取得广泛的 Agent 访问权限；我们只开放文字回传工具，不代表这个账号级授权提示可以忽略。
 
 ## 基于官方例程
 
@@ -160,7 +169,13 @@ Linux 官方流程要求 Python 3.9+、有效 SDK Token、Muse App 和经用户�
 
 介绍一下你正在做的设备、想接入的场景，以及已有的接口，我们可以从一个可验证的小演示开始。
 
-微信与交流群入口将在团队提供可公开的二维码后补充。请勿在 Issue 中发送令牌、账号凭证或私人资料。
+### 小红书交流群
+
+用小红书扫码加入 **muse gadgets 交流群 (1)**，一起交流复现和设备适配。这是社区交流群，不是 Muse／Meta 官方支持群。
+
+<img src="assets/xiaohongshu-group.jpg" alt="小红书群二维码，图示有效期至 2026-10-31" width="300"/>
+
+图片标注有效期至 **2026 年 10 月 31 日**；尚未独立验证扫码入群。如果过期，可在 Issue 中索取更新邀请。微信入口和小红书个人主页待补；请勿在 Issue 或群聊里发送令牌、账号凭证或私人资料。
 
 ## 隐私与授权边界
 

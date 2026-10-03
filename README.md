@@ -73,9 +73,18 @@ Source shows implementation, not execution. The screenshot below is our own test
 
 <img src="assets/linux-test-report.jpg" alt="Our Linux migration test report on GitHub" width="100%"/>
 
-Phone screenshots and a continuous demo recording are not yet included. No synthetic chat images stand in for live evidence.
+A continuous demo recording is not yet included. No synthetic chat images stand in for live evidence.
 
 </details>
+
+### What it looked like in the Muse app
+
+These are unedited screenshots supplied by the tester. The device list shows **VoiceShell Linux Bridge Test**; the conversation shows the two requested test messages and Muse's second-round acknowledgement.
+
+<img src="assets/muse-device-list.jpg" alt="Muse app device list showing VoiceShell Linux Bridge Test" width="280"/>
+<img src="assets/muse-chat-test.jpg" alt="Muse conversation with two test requests and a second-round acknowledgement" width="360"/>
+
+The chat screenshot alone does not prove that Linux received the tool reply or that ESP32 was stopped. Read it alongside the [server-side experiment report](voice_out/LINUX_MIGRATION_20261003.md). The correlation values are per-test request IDs, not authentication tokens. The app also displays its developer-mode warning: community devices are not verified by Meta and receive broad agent access. Our tool restrictions do not remove that account-level warning.
 
 ## Built on the official examples
 
@@ -144,7 +153,13 @@ We welcome hardware builders, agent/software teams and developers working on dev
 
 Reach the VoiceShell team through [our GitHub profile](https://github.com/hyj-STAR) or [open a discussion issue](https://github.com/hyj-STAR/voiceshell-muse-bridge/issues/new). Tell us what you are building, your intended interaction and the interfaces you already have.
 
-Public WeChat/contact-group QR codes will be added after the team supplies the approved images. Never share account credentials or tokens in issues.
+### Join the Xiaohongshu group
+
+Scan with Xiaohongshu to join **muse gadgets 交流群 (1)**, our community discussion group—not an official Muse/Meta support channel. The supplied image says the QR code is valid until **2026-10-31**; successful joining has not been independently tested. If it expires, ask for a refreshed invitation in an Issue.
+
+<img src="assets/xiaohongshu-group.jpg" alt="Xiaohongshu community group invitation, expires 2026-10-31" width="300"/>
+
+WeChat contact and a Xiaohongshu profile link will be added once supplied for public use. Never share account credentials or tokens in issues or group chats.
 
 ## Privacy and permissions
 
