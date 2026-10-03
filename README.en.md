@@ -5,13 +5,11 @@
 [![GitHub stars](https://img.shields.io/github/stars/hyj-STAR/voiceshell-muse-bridge?style=flat)](https://github.com/hyj-STAR/voiceshell-muse-bridge/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/hyj-STAR/voiceshell-muse-bridge?style=flat)](https://github.com/hyj-STAR/voiceshell-muse-bridge/forks)
 
-[Reproduction walkthrough and pitfalls (中文)](WALKTHROUGH.md) · [Contributing](CONTRIBUTING.md) · [Licensing](LICENSING.md)
-
 ### Pair on a board. Run the connection on your server.
 
 **A path from your devices to your Muse, without an ESP32 in every message hop.**
 
-[简体中文](README.md) · [English](README.en.md)
+[English](README.md) · [简体中文](README.zh-CN.md)
 
 ![Stage: experimental](https://img.shields.io/badge/stage-experimental-f4b942)
 ![Transport: official SDK](https://img.shields.io/badge/transport-official_Muse_SDK-4656a5)
@@ -25,11 +23,33 @@
 
 ## Why a bridge?
 
-You already have computers, wearables and connected devices. We want them to reach your own agent without each one needing its own dedicated Muse gadget in the message path.
+We're building VoiceShell, wearable voice-input hardware and companion software for quieter, less conspicuous conversations with your own agents. When we saw Muse Gadgets, we wanted to find out whether the device we were already building could connect to it.
 
-Our experiment starts with user-authorized ESP32 pairing, then moves that authorized connection to Linux. **The key step worked: with the ESP32 application stopped, Linux independently sent messages and received Muse's text replies.**
+Our headset isn't an ESP32. That led to a more specific question: **could we use an ESP32 for the initial pairing, then let our own Linux server handle the conversation?** If that worked, we could build adapters for our software and hardware around the server, rather than keep a development board in every message path.
 
-The broader goal is to connect other clients through the bridge. Their APIs, authorization and adapters are still to be built. Internet access alone does not make a device plug-and-play.
+So we followed the official SDK examples and tried it. Getting there took a few detours.
+
+On the Mac, a successful advertising callback didn't mean the phone could find the device. On Windows, the adapter reported peripheral support, but GATT advertising still failed. A physical ESP32-S3 finally appeared in the Muse app—only for setup to get stuck again after joining Wi-Fi.
+
+Eventually, we completed three text round trips through the ESP32. Then we stopped its application and ran two separate sessions on Linux. **Linux sent the messages and received the replies without the board forwarding them.**
+
+That's the experiment we're sharing here: the code, the steps that worked, and the dead ends worth knowing about before you try it yourself. Other client adapters, long-running operation and headset audio are still ahead of us.
+
+## Where we got stuck
+
+### Connected to Wi-Fi, but not to Muse
+
+The board joined the hotspot, while the app kept waiting. Its logs showed a VM lookup timeout and HTTP status 0—not an authentication rejection. Being able to use Muse on the phone didn't tell us whether a device tethered to that phone had a working route to the same service.
+
+We eventually completed setup using a working Windows hotspot/proxy path. That is a result from our setup, not a promise that phone tethering shares a VPN or that every connection failure has the same cause. If you get stuck here, check discovery, Wi-Fi association and cloud connectivity separately before changing credentials.
+
+### The reply was on the phone, not back at the device
+
+Sending a message worked. Reading the answer back was a different problem: the device's chat-history request returned `403: path not allowed for device token`.
+
+We added a small device tool, `voiceshell.reply`, that Muse can call to return text. Each request gets a fresh correlation ID so we can tell which reply belongs to which request. This gave us a working text round trip without accessing the blocked history endpoint. It still depends on Muse invoking the tool; it isn't token-by-token streaming.
+
+The [Chinese walkthrough](WALKTHROUGH.md) covers the setup sequence and network troubleshooting in more detail. The [compatibility log](COMPATIBILITY_HISTORY.md) also keeps the unsuccessful Mac and Windows attempts—we don't want you to mistake an OS capability flag for a tested connection.
 
 ## Evidence
 
@@ -68,6 +88,11 @@ Delivery depends on Muse invoking the tool correctly. It is neither streaming ou
 ## Get started
 
 Developer research code, not a one-command installer. Choose the experiment you want to reproduce:
+
+```sh
+git clone https://github.com/hyj-STAR/voiceshell-muse-bridge.git
+cd voiceshell-muse-bridge
+```
 
 | Task | Entry point |
 | --- | --- |
