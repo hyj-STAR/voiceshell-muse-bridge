@@ -175,7 +175,15 @@ Linux 官方流程要求 Python 3.9+、有效 SDK Token、Muse App 和经用户�
 
 <img src="assets/xiaohongshu-group.jpg" alt="小红书群二维码，图示有效期至 2026-10-31" width="300"/>
 
-图片标注有效期至 **2026 年 10 月 31 日**；尚未独立验证扫码入群。如果过期，可在 Issue 中索取更新邀请。微信入口和小红书个人主页待补；请勿在 Issue 或群聊里发送令牌、账号凭证或私人资料。
+图片标注有效期至 **2026 年 10 月 31 日**；尚未独立验证扫码入群。如果过期，可在 Issue 中索取更新邀请。
+
+### 微信内测群
+
+用微信扫码加入 **VoiceShell第二批内测**，交流 VoiceShell 内测与设备适配。这是 VoiceShell 社区群，不是 Muse／Meta 官方支持群。
+
+<img src="assets/wechat-group.jpg" alt="VoiceShell第二批内测微信群二维码，图示 2026 年 10 月 10 日前有效" width="300"/>
+
+图片标注 **2026 年 10 月 10 日前有效**；尚未独立验证扫码入群，过期可在 Issue 中索取更新邀请。请勿在 Issue 或群聊里发送令牌、账号凭证或私人资料。
 
 ## 隐私与授权边界
 

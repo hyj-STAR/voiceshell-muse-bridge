@@ -159,7 +159,13 @@ Scan with Xiaohongshu to join **muse gadgets 交流群 (1)**, our community disc
 
 <img src="assets/xiaohongshu-group.jpg" alt="Xiaohongshu community group invitation, expires 2026-10-31" width="300"/>
 
-WeChat contact and a Xiaohongshu profile link will be added once supplied for public use. Never share account credentials or tokens in issues or group chats.
+### Join the VoiceShell WeChat group
+
+Scan with WeChat to join **VoiceShell第二批内测** (VoiceShell second beta group). This is a VoiceShell community group, not an official Muse/Meta support channel.
+
+<img src="assets/wechat-group.jpg" alt="VoiceShell second beta WeChat group invitation, valid before October 10, 2026" width="300"/>
+
+The supplied image states that this invitation is valid **before October 10, 2026**. Joining has not been independently tested; ask for a refreshed invitation in an Issue if it expires. Never share account credentials or tokens in issues or group chats.
 
 ## Privacy and permissions
 
